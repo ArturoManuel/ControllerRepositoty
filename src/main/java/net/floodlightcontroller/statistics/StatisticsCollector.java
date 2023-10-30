@@ -220,12 +220,12 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 		PortTxThreshold = config.get("PortTxThreshold").trim();
 		PortRxThreshold = config.get("PortRxThreshold").trim();
 		if (PortTxThreshold==null || PortRxThreshold==null){
-			logger.debug("TXTHRESHOLD..................{}", PortRxThreshold);
-			logger.debug("RXTHRESHOLD..................{}", PortTxThreshold);
+			logger.debug(PortRxThreshold);
+			logger.debug(PortTxThreshold);
 
 		}
-		logger.debug("TXTHRESHOLD..................{}", PortRxThreshold);
-		logger.debug("RXTHRESHOLD..................{}", PortTxThreshold);
+		logger.debug(PortRxThreshold);
+		logger.debug(PortTxThreshold);
 
 
 
