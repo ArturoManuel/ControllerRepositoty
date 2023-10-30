@@ -44,8 +44,8 @@ import net.floodlightcontroller.topology.NodePortTuple;
 public class StatisticsCollector implements IFloodlightModule, IStatisticsService {
 
 	protected FloodlightModuleContext fmlContext;
-	protected String PortTxThreshold;
-	protected String PortRxThreshold;
+	protected String PortTxThreshold= "XD";
+	protected String PortRxThreshold= "XD";
 
 	protected static Logger logger;
 
@@ -214,12 +214,11 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 	public void init(FloodlightModuleContext context)
 			throws FloodlightModuleException {
 
+		Map<String, String> config = context.getConfigParams(this);
 
 
-		this.fmlContext = context;
-		Map<String, String> configOptions = context.getConfigParams(this);
-		PortTxThreshold = configOptions.get("PortTxThreshold");
-		PortRxThreshold = configOptions.get("PortRxThreshold");
+		PortTxThreshold = config.get("PortTxThreshold");
+		PortRxThreshold = config.get("PortRxThreshold");
 		logger.debug("TXTHRESHOLD..................{}", PortRxThreshold);
 		logger.debug("RXTHRESHOLD..................{}", PortTxThreshold);
 
@@ -231,7 +230,7 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 		threadPoolService = context.getServiceImpl(IThreadPoolService.class);
 		restApiService = context.getServiceImpl(IRestApiService.class);
 
-		Map<String, String> config = context.getConfigParams(this);
+
 		if (config.containsKey(ENABLED_STR)) {
 			try {
 				isEnabled = Boolean.parseBoolean(config.get(ENABLED_STR).trim());
