@@ -69,6 +69,10 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 	private static final long MILLIS_PER_SEC = 1000;
 	
 	private static final String INTERVAL_PORT_STATS_STR = "collectionIntervalPortStatsSeconds";
+
+	private static final String PortTxThreshold_STR = "porttx";
+	private static final String PortRxThreshold_STR = "portrx";
+
 	private static final String ENABLED_STR = "enable";
 
 	private static final HashMap<NodePortTuple, SwitchPortBandwidth> portStats = new HashMap<NodePortTuple, SwitchPortBandwidth>();
@@ -217,11 +221,10 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 		Map<String, String> config = context.getConfigParams(this);
 
 
-		PortTxThreshold = Integer.parseInt(config.get("porttx").trim());
-		PortRxThreshold = Integer.parseInt(config.get("portrx").trim());
-		logger.debug(String.valueOf(PortRxThreshold));
-		logger.debug(String.valueOf(PortTxThreshold));
-
+		PortTxThreshold = Integer.parseInt(config.get(PortTxThreshold_STR).trim());
+		PortRxThreshold = Integer.parseInt(config.get(PortRxThreshold_STR).trim());
+		log.info("Port statistics collection interval set to {}s", PortTxThreshold);
+		log.info("Port statistics collection interval set to {}s", PortRxThreshold);
 
 
 
