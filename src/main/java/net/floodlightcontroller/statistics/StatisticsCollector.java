@@ -44,8 +44,8 @@ import net.floodlightcontroller.topology.NodePortTuple;
 public class StatisticsCollector implements IFloodlightModule, IStatisticsService {
 
 	protected FloodlightModuleContext fmlContext;
-	protected String PortTxThreshold= "XD";
-	protected String PortRxThreshold= "XD";
+	protected static String PortTxThreshold= "XD";
+	protected static String PortRxThreshold= "XD";
 
 	protected static Logger logger;
 
