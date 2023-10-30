@@ -142,7 +142,25 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 									U64.ofRaw((txBytesCounted.getValue() * BITS_PER_BYTE) / timeDifSec), 
 									pse.getRxBytes(), pse.getTxBytes())
 									);
-							
+
+
+							// Insertamos nuestro fragmento de código aquí
+							long rxRate = (rxBytesCounted.getValue() * BITS_PER_BYTE) / timeDifSec;
+							long txRate = (txBytesCounted.getValue() * BITS_PER_BYTE) / timeDifSec;
+
+							if (rxRate > PortRxThreshold) {
+								log.info("RX Bandwidth for port " + npt.getPortId() + " on switch " + npt.getNodeId() +
+										" has exceeded the threshold: " + rxRate + " bps > " + PortRxThreshold + " bps");
+							}
+
+							if (txRate > PortTxThreshold) {
+								log.info("TX Bandwidth for port " + npt.getPortId() + " on switch " + npt.getNodeId() +
+										" has exceeded the threshold: " + txRate + " bps > " + PortTxThreshold + " bps");
+							}
+
+
+
+
 						} else { /* initialize */
 							tentativePortStats.put(npt, SwitchPortBandwidth.of(npt.getNodeId(), npt.getPortId(), U64.ZERO, U64.ZERO, pse.getRxBytes(), pse.getTxBytes()));
 						}
