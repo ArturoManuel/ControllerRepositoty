@@ -217,10 +217,13 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 		Map<String, String> config = context.getConfigParams(this);
 
 
-		PortTxThreshold = config.get("PortTxThreshold");
-		PortRxThreshold = config.get("PortRxThreshold");
-		logger.debug("TXTHRESHOLD..................{}", PortRxThreshold);
-		logger.debug("RXTHRESHOLD..................{}", PortTxThreshold);
+		PortTxThreshold = config.get("PortTxThreshold").trim();
+		PortRxThreshold = config.get("PortRxThreshold").trim();
+		if (PortTxThreshold==null || PortRxThreshold==null){
+			logger.debug("TXTHRESHOLD..................{}", PortRxThreshold);
+			logger.debug("RXTHRESHOLD..................{}", PortTxThreshold);
+
+		}
 
 
 
