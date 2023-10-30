@@ -224,6 +224,8 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 			logger.debug("RXTHRESHOLD..................{}", PortTxThreshold);
 
 		}
+		logger.debug("TXTHRESHOLD..................{}", PortRxThreshold);
+		logger.debug("RXTHRESHOLD..................{}", PortTxThreshold);
 
 
 
