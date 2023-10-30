@@ -42,7 +42,19 @@ import net.floodlightcontroller.threadpool.IThreadPoolService;
 import net.floodlightcontroller.topology.NodePortTuple;
 
 public class StatisticsCollector implements IFloodlightModule, IStatisticsService {
+
+	protected FloodlightModuleContext fmlContext;
+	protected String PortTxThreshold;
+	protected String PortRxThreshold;
+
+	protected static Logger logger;
+
+
+
+
+
 	private static final Logger log = LoggerFactory.getLogger(StatisticsCollector.class);
+
 
 	private static IOFSwitchService switchService;
 	private static IThreadPoolService threadPoolService;
@@ -201,6 +213,20 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 	@Override
 	public void init(FloodlightModuleContext context)
 			throws FloodlightModuleException {
+
+
+
+		this.fmlContext = context;
+		Map<String, String> configOptions = context.getConfigParams(this);
+		PortTxThreshold = configOptions.get("PortTxThreshold");
+		PortRxThreshold = configOptions.get("PortRxThreshold");
+		logger.debug("TXTHRESHOLD..................{}", PortRxThreshold);
+		logger.debug("RXTHRESHOLD..................{}", PortTxThreshold);
+
+
+
+
+
 		switchService = context.getServiceImpl(IOFSwitchService.class);
 		threadPoolService = context.getServiceImpl(IThreadPoolService.class);
 		restApiService = context.getServiceImpl(IRestApiService.class);
