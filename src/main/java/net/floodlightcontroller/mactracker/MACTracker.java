@@ -67,41 +67,38 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
     @Override
     public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
-
-        // Obtén las direcciones MAC y IP del paquete
         MacAddress sourceMac = eth.getSourceMACAddress();
         IPv4Address srcIp = null;
 
-        // Imprime la dirección IP y MAC de origen de cada paquete recibido
-        IPv4 ipv4 = null;
+        // Procesa solo paquetes IPv4
         if (eth.getEtherType() == EthType.IPv4) {
-            ipv4 = (IPv4) eth.getPayload();
+            IPv4 ipv4 = (IPv4) eth.getPayload();
             srcIp = ipv4.getSourceAddress();
-            logger.info("Paquete recibido: IP Origen: {}, MAC Origen: {}", srcIp.toString(), sourceMac.toString());
-        }else {
-            logger.info("No se recibe nada error ");
-        }
 
-        // Verifica si el paquete es IPv4 y el protocolo es ICMP
-        if (srcIp != null && ipv4.getProtocol() == IpProtocol.ICMP) {
-            // Revisa si la dirección IP de origen está en la lista de pares permitidos
-            if (allowedIPMacPairs.containsKey(srcIp)) {
-                // Revisa si la dirección MAC de origen coincide con la dirección MAC permitida
-                if (!allowedIPMacPairs.get(srcIp).equals(sourceMac)) {
-                    // Si la dirección MAC no coincide, imprime un mensaje de bloqueo y detén el procesamiento del paquete
-                    logger.info("Bloqueo de paquete ICMP desde IP: {}, con MAC: {}. La dirección MAC no coincide con la permitida.", srcIp.toString(), sourceMac.toString());
+            // Registra todos los paquetes IPv4
+            logger.info("Paquete IPv4 recibido: IP Origen: {}, MAC Origen: {}", srcIp.toString(), sourceMac.toString());
+
+            // Procesa solo paquetes ICMP
+            if (ipv4.getProtocol() == IpProtocol.ICMP) {
+                // Revisa si la dirección IP de origen está en la lista de pares permitidos
+                if (allowedIPMacPairs.containsKey(srcIp)) {
+                    if (!allowedIPMacPairs.get(srcIp).equals(sourceMac)) {
+                        logger.info("Bloqueo de paquete ICMP desde IP: {}, con MAC: {}. La dirección MAC no coincide con la permitida.", srcIp.toString(), sourceMac.toString());
+                        return Command.STOP;
+                    }
+                } else {
+                    logger.info("Bloqueo de paquete ICMP desde IP no permitida: {}, con MAC: {}.", srcIp.toString(), sourceMac.toString());
                     return Command.STOP;
                 }
-            } else {
-                // Si la dirección IP de origen no está en la lista, también puedes decidir bloquear o permitir
-                logger.info("Bloqueo de paquete ICMP desde IP no permitida: {}, con MAC: {}.", srcIp.toString(), sourceMac.toString());
-                return Command.STOP; // o Command.CONTINUE si decides permitir IPs no listadas
             }
+        } else {
+            // Si deseas registrar otros tipos de paquetes, puedes hacerlo aquí
+            logger.info("Paquete no IPv4 recibido, tipo EtherType: {}", eth.getEtherType());
         }
 
-        // Si llega hasta aquí, el paquete es permitido
         return Command.CONTINUE;
     }
+
 
 
 
