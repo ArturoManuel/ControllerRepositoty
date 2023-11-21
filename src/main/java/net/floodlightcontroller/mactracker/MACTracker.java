@@ -128,8 +128,8 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
         allowedIPMacPairs = new HashMap<>();
 
         // Agrega los pares permitidos de IP y MAC
-        allowedIPMacPairs.put(IPv4Address.of("10.0.0.1"), MacAddress.of("fa:16:3e:3f:84:9c"));
-        allowedIPMacPairs.put(IPv4Address.of("10.0.0.2"), MacAddress.of("fa:16:3e:03:d1:8b"));
+        allowedIPMacPairs.put(IPv4Address.of("10.0.0.1"), MacAddress.of("fa:16:3e:03:d1:8b"));
+        allowedIPMacPairs.put(IPv4Address.of("10.0.0.2"), MacAddress.of("fa:16:3e:3f:84:9c"));
         // ... Agrega tantas combinaciones como necesites
     }
 
