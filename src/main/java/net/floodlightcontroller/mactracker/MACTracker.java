@@ -12,10 +12,9 @@ import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFType;
-import org.projectfloodlight.openflow.types.IPv4Address;
-import org.projectfloodlight.openflow.types.MacAddress;
-import java.util.Collection;
-import java.util.Map;
+import org.projectfloodlight.openflow.types.*;
+
+import java.util.*;
 
 
 import java.util.Collection;
@@ -33,12 +32,14 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.core.IFloodlightProviderService;
-import java.util.ArrayList;
+
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.Set;
+
 import net.floodlightcontroller.packet.Ethernet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.projectfloodlight.openflow.types.MacAddress;
+import org.projectfloodlight.openflow.types.IPv4Address;
 
 public class MACTracker implements IOFMessageListener, IFloodlightModule {
 
@@ -46,6 +47,7 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
     protected IFloodlightProviderService floodlightProvider;
     protected Set<Long> macAddresses;
     protected static Logger logger;
+    private Map<IPv4Address, MacAddress> allowedIPMacPairs;
 
     @Override
     public String getName() {
@@ -66,28 +68,30 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
     public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
-        Long sourceMACHash = eth.getSourceMACAddress().getLong();
-        Long destMACHash = eth.getDestinationMACAddress().getLong();
+        // Obtén las direcciones MAC y IP del paquete
+        MacAddress sourceMac = eth.getSourceMACAddress();
+        MacAddress destMac = eth.getDestinationMACAddress();
 
-        if (!macAddresses.contains(sourceMACHash)) {
-            macAddresses.add(sourceMACHash);
-        }
-
-        if (!macAddresses.contains(destMACHash)) {
-            macAddresses.add(destMACHash);
-        }
-
-        // Verificar si el paquete es un paquete IPv4
-        if (eth.getEtherType().getValue() == Ethernet.TYPE_IPv4) {
+        // Asumimos que solo queremos bloquear ICMP si la dirección IP de origen está en la lista permitida
+        // pero la dirección MAC de origen no coincide con la entrada correspondiente en allowedIPMacPairs.
+        if (eth.getEtherType() == EthType.IPv4) {
             IPv4 ipv4 = (IPv4) eth.getPayload();
             IPv4Address srcIp = ipv4.getSourceAddress();
-            IPv4Address dstIp = ipv4.getDestinationAddress();
 
-            // Registrar las direcciones MAC e IP
-            logger.info("MAC Address: Source: {}, Destination: {}", eth.getSourceMACAddress(), eth.getDestinationMACAddress());
-            logger.info("IP Address: Source: {}, Destination: {}", srcIp, dstIp);
+            if (ipv4.getProtocol() == IpProtocol.ICMP) {
+                // Revisa si la dirección IP de origen está en la lista de pares permitidos
+                if (allowedIPMacPairs.containsKey(srcIp)) {
+                    // Revisa si la dirección MAC de origen coincide con la dirección MAC permitida
+                    if (!allowedIPMacPairs.get(srcIp).equals(sourceMac)) {
+                        // Si la dirección MAC no coincide, bloquea el paquete ICMP
+                        logger.info("Bloqueando paquete ICMP de {} porque la dirección MAC no coincide", srcIp.toString());
+                        return Command.STOP;
+                    }
+                }
+            }
         }
 
+        // Si llega hasta aquí, el paquete es permitido
         return Command.CONTINUE;
     }
 
@@ -115,6 +119,15 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
         floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
         macAddresses = new ConcurrentSkipListSet<Long>();
         logger = LoggerFactory.getLogger(MACTracker.class);
+
+
+        // Inicializa el HashMap para almacenar los pares permitidos de IP y MAC
+        allowedIPMacPairs = new HashMap<>();
+
+        // Agrega los pares permitidos de IP y MAC
+        allowedIPMacPairs.put(IPv4Address.of("10.0.0.1"), MacAddress.of("fa:16:3e:03:d1:8b"));
+        allowedIPMacPairs.put(IPv4Address.of("10.0.0.2"), MacAddress.of("fa:16:3e:3f:84:9c"));
+        // ... Agrega tantas combinaciones como necesites
     }
 
     @Override
