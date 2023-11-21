@@ -68,14 +68,11 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
     public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
-        // Obtén las direcciones MAC y IP del paquete
-        MacAddress sourceMac = eth.getSourceMACAddress();
-        IPv4Address srcIp = null;
-
         // Verifica si el paquete es IPv4 y el protocolo es ICMP
         if (eth.getEtherType() == EthType.IPv4) {
             IPv4 ipv4 = (IPv4) eth.getPayload();
-            srcIp = ipv4.getSourceAddress();
+            IPv4Address srcIp = ipv4.getSourceAddress();
+            MacAddress sourceMac = eth.getSourceMACAddress();
 
             if (ipv4.getProtocol() == IpProtocol.ICMP) {
                 // Imprime la dirección IP y MAC que intenta enviar el paquete ICMP
@@ -89,6 +86,10 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
                         logger.info("Bloqueo de paquete ICMP desde IP: {}, con MAC: {}. La dirección MAC no coincide con la permitida.", srcIp.toString(), sourceMac.toString());
                         return Command.STOP;
                     }
+                } else {
+                    // Si la dirección IP de origen no está en la lista, también puedes decidir bloquear o permitir
+                    logger.info("Bloqueo de paquete ICMP desde IP no permitida: {}, con MAC: {}.", srcIp.toString(), sourceMac.toString());
+                    return Command.STOP; // o Command.CONTINUE si decides permitir IPs no listadas
                 }
             }
         }
@@ -96,6 +97,7 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
         // Si llega hasta aquí, el paquete es permitido
         return Command.CONTINUE;
     }
+
 
 
 
@@ -123,15 +125,15 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
         macAddresses = new ConcurrentSkipListSet<Long>();
         logger = LoggerFactory.getLogger(MACTracker.class);
 
-
         // Inicializa el HashMap para almacenar los pares permitidos de IP y MAC
         allowedIPMacPairs = new HashMap<>();
 
         // Agrega los pares permitidos de IP y MAC
-        allowedIPMacPairs.put(IPv4Address.of("10.0.0.1"), MacAddress.of("fa:16:3e:03:d1:8b"));
-        allowedIPMacPairs.put(IPv4Address.of("10.0.0.2"), MacAddress.of("fa:16:3e:3f:84:9c"));
+        allowedIPMacPairs.put(IPv4Address.of("10.0.0.1"), MacAddress.of("fa:16:3e:3f:84:9c"));
+        allowedIPMacPairs.put(IPv4Address.of("10.0.0.2"), MacAddress.of("fa:16:3e:03:d1:8b"));
         // ... Agrega tantas combinaciones como necesites
     }
+
 
     @Override
     public void startUp(FloodlightModuleContext context) {
