@@ -9,8 +9,10 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPv4;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFType;
+import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.MacAddress;
 import java.util.Collection;
 import java.util.Map;
@@ -62,19 +64,33 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
 
     @Override
     public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-        Ethernet eth =
-                IFloodlightProviderService.bcStore.get(cntx,
-                        IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+        Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
         Long sourceMACHash = eth.getSourceMACAddress().getLong();
+        Long destMACHash = eth.getDestinationMACAddress().getLong();
+
         if (!macAddresses.contains(sourceMACHash)) {
             macAddresses.add(sourceMACHash);
-            logger.info("MAC Address: {} seen on switch: {} prueba a ver si funciona",
-                    eth.getSourceMACAddress().toString(),
-                    sw.getId().toString());
         }
+
+        if (!macAddresses.contains(destMACHash)) {
+            macAddresses.add(destMACHash);
+        }
+
+        // Verificar si el paquete es un paquete IPv4
+        if (eth.getEtherType().getValue() == Ethernet.TYPE_IPv4) {
+            IPv4 ipv4 = (IPv4) eth.getPayload();
+            IPv4Address srcIp = ipv4.getSourceAddress();
+            IPv4Address dstIp = ipv4.getDestinationAddress();
+
+            // Registrar las direcciones MAC e IP
+            logger.info("MAC Address: Source: {}, Destination: {}", eth.getSourceMACAddress(), eth.getDestinationMACAddress());
+            logger.info("IP Address: Source: {}, Destination: {}", srcIp, dstIp);
+        }
+
         return Command.CONTINUE;
     }
+
 
     @Override
     public Collection<Class<? extends IFloodlightService>> getModuleServices() {
