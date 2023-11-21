@@ -70,21 +70,23 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
 
         // Obtén las direcciones MAC y IP del paquete
         MacAddress sourceMac = eth.getSourceMACAddress();
-        MacAddress destMac = eth.getDestinationMACAddress();
+        IPv4Address srcIp = null;
 
-        // Asumimos que solo queremos bloquear ICMP si la dirección IP de origen está en la lista permitida
-        // pero la dirección MAC de origen no coincide con la entrada correspondiente en allowedIPMacPairs.
+        // Verifica si el paquete es IPv4 y el protocolo es ICMP
         if (eth.getEtherType() == EthType.IPv4) {
             IPv4 ipv4 = (IPv4) eth.getPayload();
-            IPv4Address srcIp = ipv4.getSourceAddress();
+            srcIp = ipv4.getSourceAddress();
 
             if (ipv4.getProtocol() == IpProtocol.ICMP) {
+                // Imprime la dirección IP y MAC que intenta enviar el paquete ICMP
+                logger.info("Intento de envío de paquete ICMP: IP Origen: {}, MAC Origen: {}", srcIp.toString(), sourceMac.toString());
+
                 // Revisa si la dirección IP de origen está en la lista de pares permitidos
                 if (allowedIPMacPairs.containsKey(srcIp)) {
                     // Revisa si la dirección MAC de origen coincide con la dirección MAC permitida
                     if (!allowedIPMacPairs.get(srcIp).equals(sourceMac)) {
-                        // Si la dirección MAC no coincide, bloquea el paquete ICMP
-                        logger.info("Bloqueando paquete ICMP de {} porque la dirección MAC no coincide", srcIp.toString());
+                        // Si la dirección MAC no coincide, imprime un mensaje de bloqueo y detén el procesamiento del paquete
+                        logger.info("Bloqueo de paquete ICMP desde IP: {}, con MAC: {}. La dirección MAC no coincide con la permitida.", srcIp.toString(), sourceMac.toString());
                         return Command.STOP;
                     }
                 }
@@ -94,6 +96,7 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
         // Si llega hasta aquí, el paquete es permitido
         return Command.CONTINUE;
     }
+
 
 
     @Override
