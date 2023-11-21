@@ -69,7 +69,7 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
         Long sourceMACHash = eth.getSourceMACAddress().getLong();
         if (!macAddresses.contains(sourceMACHash)) {
             macAddresses.add(sourceMACHash);
-            logger.info("MAC Address: {} seen on switch: {}",
+            logger.info("MAC Address: {} seen on switch: {} prueba a ver si funciona",
                     eth.getSourceMACAddress().toString(),
                     sw.getId().toString());
         }
