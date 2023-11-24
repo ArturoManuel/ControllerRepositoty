@@ -7,6 +7,7 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.mactracker.MACTracker;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFType;
 
@@ -32,7 +33,7 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
     @Override
     public String getName() {
-        return "PorScanning";
+        return  PortScanning.class.getSimpleName();
     }
 
     @Override
@@ -47,9 +48,7 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
     @Override
     public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-        Ethernet eth =
-                IFloodlightProviderService.bcStore.get(cntx,
-                        IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+        Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
         Long sourceMACHash = eth.getSourceMACAddress().getLong();
         if (!macAddresses.contains(sourceMACHash)) {
@@ -62,9 +61,7 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
     }
     @Override
     public Collection<Class<? extends IFloodlightService>> getModuleServices() {
-        Collection<Class<? extends IFloodlightService>> l = new ArrayList<Class<? extends IFloodlightService>>();
-        l.add(IFloodlightProviderService.class);
-        return l;
+        return null;
     }
 
     @Override
@@ -74,7 +71,9 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
     @Override
     public Collection<Class<? extends IFloodlightService>> getModuleDependencies() {
-        return null;
+        Collection<Class<? extends IFloodlightService>> l = new ArrayList<Class<? extends IFloodlightService>>();
+        l.add(IFloodlightProviderService.class);
+        return l;
     }
 
     @Override
