@@ -79,7 +79,7 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
             logger.info("Paquete IPv4 recibido: IP Origen: {}, MAC Origen: {}", srcIp.toString(), sourceMac.toString());
 
             // Procesa solo paquetes ICMP
-            if (ipv4.getProtocol() == IpProtocol.ICMP) {
+            if (ipv4.getProtocol() == IpProtocol.TCP || ipv4.getProtocol() == IpProtocol.UDP) {
                 // Revisa si la dirección IP de origen está en la lista de pares permitidos
                 if (allowedIPMacPairs.containsKey(srcIp)) {
                     if (!allowedIPMacPairs.get(srcIp).equals(sourceMac)) {
