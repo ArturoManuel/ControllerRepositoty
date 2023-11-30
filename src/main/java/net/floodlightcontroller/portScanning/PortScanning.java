@@ -3,6 +3,7 @@ package net.floodlightcontroller.portScanning;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.core.internal.IOFSwitchService;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
@@ -13,9 +14,7 @@ import net.floodlightcontroller.packet.TCP;
 import net.floodlightcontroller.packet.UDP;
 
 
-import org.projectfloodlight.openflow.protocol.OFFlowMod;
-import org.projectfloodlight.openflow.protocol.OFMessage;
-import org.projectfloodlight.openflow.protocol.OFType;
+import org.projectfloodlight.openflow.protocol.*;
 
 import java.util.*;
 
@@ -33,7 +32,10 @@ import org.projectfloodlight.openflow.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+
 public class PortScanning implements IOFMessageListener, IFloodlightModule {
+    protected IOFSwitchService switchService;
 
 
     protected IFloodlightProviderService floodlightProvider;
@@ -87,10 +89,11 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
                 lastAccessTimeMap.put(srcIp, System.currentTimeMillis());
 
                 if (isPortScan(srcIp)) {
-//                    blockSourceIp(sw, srcMac, dstMac); // Call blockSourceIp method with MAC addresses
+                    blockSourceIp(srcMac, dstMac); // Utiliza las direcciones MAC detectadas
                     logger.info("Port scan detected from IP: {}, blocking source MAC: {}", srcIp.toString(), srcMac.toString());
                     return Command.STOP;
                 }
+
             }
         }
         return Command.CONTINUE;
@@ -118,6 +121,7 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
         floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
         macAddresses = new ConcurrentSkipListSet<Long>();
         logger = LoggerFactory.getLogger(PortScanning.class);
+        switchService = context.getServiceImpl(IOFSwitchService.class);
 
         portAccessMap = new ConcurrentHashMap<>();
 
@@ -145,41 +149,38 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
     }
 
 
-//    protected void blockSourceIp(IOFSwitch sw, MacAddress srcMac, MacAddress dstMac) {
-//        String flowName = "blockFlow" + System.currentTimeMillis();
-//        String json = "{" +
-//                "\"switch\":\"" + "00:00:f2:20:f9:45:4c:4e" + "\"," +
-//                "\"name\":\"" + flowName + "\"," +
-//                "\"cookie\":\"0\"," +
-//                "\"priority\":\"32768\"," +
-//                "\"eth_dst\":\"" + dstMac.toString() + "\"," +
-//                "\"eth_src\":\"" + srcMac.toString() + "\"," +
-//                "\"actions\":\"\"" +
-//                "}";
-//
-//        String flowPusherUrl = "http://10.20.12.125:8080/wm/staticflowpusher/json";
-//        try {
-//            // You will need to use an HTTP client to send this POST request
-//            // As of my last training data, Floodlight does not provide an HTTP client
-//            // You would need to include a library like Apache HttpClient or use Java's HttpURLConnection
-//            // Below is a pseudocode representation of what the logic might look like:
-//
-//            HttpClient httpClient = HttpClientBuilder.create().build();
-//            HttpPost request = new HttpPost(flowPusherUrl);
-//            StringEntity params = new StringEntity(json);
-//            request.addHeader("content-type", "application/json");
-//            request.setEntity(params);
-//            HttpResponse response = httpClient.execute(request);
-//
-//            // Handle the response appropriately
-//            if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK){
-//                logger.info("Flow rule successfully pushed to block MAC: {}", srcMac.toString());
-//            } else {
-//                logger.error("Failed to push flow rule. Status code: {}", response.getStatusLine().getStatusCode());
-//            }
-//        } catch (Exception e) {
-//            logger.error("Error sending flow push request", e);
-//        }
-//    }
+    protected void blockSourceIp(MacAddress srcMac, MacAddress dstMac) {
+        DatapathId dpid = DatapathId.of("00:00:f2:20:f9:45:4c:4e"); // Datapath ID de tu switch
+        IOFSwitch sw = switchService.getSwitch(dpid); // Obtener el switch
+
+        if (sw == null) {
+            logger.error("Switch {} no encontrado", dpid.toString());
+            return;
+        }
+
+        OFFactory factory = sw.getOFFactory(); // Obtener la fábrica de mensajes para la versión OF del switch
+
+        // Construir el Match
+        Match match = factory.buildMatch()
+                .setExact(MatchField.ETH_SRC, srcMac)
+                .setExact(MatchField.ETH_DST, dstMac)
+                .build();
+
+        // Construir el FlowMod
+        OFFlowAdd flowAdd = factory.buildFlowAdd()
+                .setMatch(match)
+                .setPriority(32768)
+                .setIdleTimeout(0)
+                .setHardTimeout(3600)
+                .setBufferId(OFBufferId.NO_BUFFER)
+                .setOutPort(OFPort.ANY)
+                .build();
+
+        // Enviar el FlowMod al switch
+        sw.write(flowAdd);
+
+        logger.info("Flow rule added to block traffic from MAC: {}", srcMac.toString());
+    }
+
 
 }
