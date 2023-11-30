@@ -11,8 +11,7 @@ import net.floodlightcontroller.mactracker.MACTracker;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.TCP;
 import net.floodlightcontroller.packet.UDP;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
+
 
 import org.projectfloodlight.openflow.protocol.OFFlowMod;
 import org.projectfloodlight.openflow.protocol.OFMessage;
