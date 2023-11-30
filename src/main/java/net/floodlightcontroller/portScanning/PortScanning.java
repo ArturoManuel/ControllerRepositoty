@@ -13,10 +13,7 @@ import net.floodlightcontroller.packet.TCP;
 import net.floodlightcontroller.packet.UDP;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
+
 import org.projectfloodlight.openflow.protocol.OFFlowMod;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFType;
@@ -91,7 +88,7 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
                 lastAccessTimeMap.put(srcIp, System.currentTimeMillis());
 
                 if (isPortScan(srcIp)) {
-                    blockSourceIp(sw, srcMac, dstMac); // Call blockSourceIp method with MAC addresses
+//                    blockSourceIp(sw, srcMac, dstMac); // Call blockSourceIp method with MAC addresses
                     logger.info("Port scan detected from IP: {}, blocking source MAC: {}", srcIp.toString(), srcMac.toString());
                     return Command.STOP;
                 }
@@ -149,41 +146,41 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
     }
 
 
-    protected void blockSourceIp(IOFSwitch sw, MacAddress srcMac, MacAddress dstMac) {
-        String flowName = "blockFlow" + System.currentTimeMillis();
-        String json = "{" +
-                "\"switch\":\"" + "00:00:f2:20:f9:45:4c:4e" + "\"," +
-                "\"name\":\"" + flowName + "\"," +
-                "\"cookie\":\"0\"," +
-                "\"priority\":\"32768\"," +
-                "\"eth_dst\":\"" + dstMac.toString() + "\"," +
-                "\"eth_src\":\"" + srcMac.toString() + "\"," +
-                "\"actions\":\"\"" +
-                "}";
-
-        String flowPusherUrl = "http://10.20.12.125:8080/wm/staticflowpusher/json";
-        try {
-            // You will need to use an HTTP client to send this POST request
-            // As of my last training data, Floodlight does not provide an HTTP client
-            // You would need to include a library like Apache HttpClient or use Java's HttpURLConnection
-            // Below is a pseudocode representation of what the logic might look like:
-
-            HttpClient httpClient = HttpClientBuilder.create().build();
-            HttpPost request = new HttpPost(flowPusherUrl);
-            StringEntity params = new StringEntity(json);
-            request.addHeader("content-type", "application/json");
-            request.setEntity(params);
-            HttpResponse response = httpClient.execute(request);
-
-            // Handle the response appropriately
-            if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK){
-                logger.info("Flow rule successfully pushed to block MAC: {}", srcMac.toString());
-            } else {
-                logger.error("Failed to push flow rule. Status code: {}", response.getStatusLine().getStatusCode());
-            }
-        } catch (Exception e) {
-            logger.error("Error sending flow push request", e);
-        }
-    }
+//    protected void blockSourceIp(IOFSwitch sw, MacAddress srcMac, MacAddress dstMac) {
+//        String flowName = "blockFlow" + System.currentTimeMillis();
+//        String json = "{" +
+//                "\"switch\":\"" + "00:00:f2:20:f9:45:4c:4e" + "\"," +
+//                "\"name\":\"" + flowName + "\"," +
+//                "\"cookie\":\"0\"," +
+//                "\"priority\":\"32768\"," +
+//                "\"eth_dst\":\"" + dstMac.toString() + "\"," +
+//                "\"eth_src\":\"" + srcMac.toString() + "\"," +
+//                "\"actions\":\"\"" +
+//                "}";
+//
+//        String flowPusherUrl = "http://10.20.12.125:8080/wm/staticflowpusher/json";
+//        try {
+//            // You will need to use an HTTP client to send this POST request
+//            // As of my last training data, Floodlight does not provide an HTTP client
+//            // You would need to include a library like Apache HttpClient or use Java's HttpURLConnection
+//            // Below is a pseudocode representation of what the logic might look like:
+//
+//            HttpClient httpClient = HttpClientBuilder.create().build();
+//            HttpPost request = new HttpPost(flowPusherUrl);
+//            StringEntity params = new StringEntity(json);
+//            request.addHeader("content-type", "application/json");
+//            request.setEntity(params);
+//            HttpResponse response = httpClient.execute(request);
+//
+//            // Handle the response appropriately
+//            if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK){
+//                logger.info("Flow rule successfully pushed to block MAC: {}", srcMac.toString());
+//            } else {
+//                logger.error("Failed to push flow rule. Status code: {}", response.getStatusLine().getStatusCode());
+//            }
+//        } catch (Exception e) {
+//            logger.error("Error sending flow push request", e);
+//        }
+//    }
 
 }
