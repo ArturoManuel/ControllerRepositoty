@@ -84,7 +84,8 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
                 if (isPortScan(srcIp)) {
 //                    blockSourceIp(sw, srcIp);
-                    logger.info("Se ha logrado el bloqueo de puertos por un usuario ilicito");
+                    logger.info("Detección de escaneo de puertos desde la IP: {}, en el switch con MAC: {}",
+                            srcIp.toString(), sw.getId().toString());
                     return Command.STOP;
                 }
             }
