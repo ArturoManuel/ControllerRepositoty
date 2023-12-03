@@ -167,7 +167,12 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
                 .build();
 
         // Construir el FlowMod
+        // Valor decimal que deseas establecer como cookie
+        long decimalValue = 30; // Por ejemplo, el valor decimal 12345
+
+// Construir el FlowMod con el valor de cookie
         OFFlowAdd flowAdd = factory.buildFlowAdd()
+                .setCookie(U64.of(decimalValue)) // Convertirá el valor decimal a hexadecimal internamente
                 .setMatch(match)
                 .setPriority(32768)
                 .setIdleTimeout(0)
