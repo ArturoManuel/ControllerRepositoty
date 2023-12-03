@@ -173,6 +173,9 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
     protected void deleteBlockingFlowRule(MacAddress srcMac, MacAddress dstMac) {
         DatapathId dpid = DatapathId.of("00:00:f2:20:f9:45:4c:4e");
+
+        logger.info("from MAC: {} has been deleted", srcMac.toString());
+        logger.info("destino MAC: {} has been deleted", dstMac.toString());
         IOFSwitch sw = switchService.getSwitch(dpid);
         if (sw == null) {
             logger.error("Switch {} no encontrado", dpid.toString());
