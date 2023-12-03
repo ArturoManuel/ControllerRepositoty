@@ -210,7 +210,8 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
         OFFlowDelete flowDelete = factory.buildFlowDelete()
                 .setMatch(match)
-                .setCookie(U64.of(30)) // Si se utilizó un valor de cookie específico al crear el flujo
+                .setCookie(U64.of(30))
+                .setPriority(32768) // La misma prioridad que se usó para añadir la regla
                 .setOutPort(OFPort.ANY)
                 .build();
 
