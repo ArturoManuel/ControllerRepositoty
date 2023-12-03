@@ -40,7 +40,7 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
     protected Map<IPv4Address, Set<TransportPort>> portAccessMap;
     protected Map<IPv4Address, Long> lastAccessTimeMap;
-    protected final int PORT_SCAN_THRESHOLD = 40; // Ejemplo: umbral de puertos
+    protected final int PORT_SCAN_THRESHOLD = 100; // Ejemplo: umbral de puertos
     protected final long TIME_WINDOW = 10 * 1000;
     protected Map<DatapathId, Pair<MacAddress, MacAddress>> blockedFlows;
 
@@ -173,10 +173,6 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
 
 
-
-
-
-
     protected void deleteBlockingFlowRule(MacAddress srcMac, MacAddress dstMac) {
         DatapathId dpid = DatapathId.of("00:00:f2:20:f9:45:4c:4e");
         IOFSwitch sw = switchService.getSwitch(dpid);
@@ -207,8 +203,6 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
         sw.write(flowDelete);
         logger.info("Flow rule to block traffic from MAC: {} to MAC: {} has been deleted", srcMac, dstMac);
     }
-
-
 
 
 
