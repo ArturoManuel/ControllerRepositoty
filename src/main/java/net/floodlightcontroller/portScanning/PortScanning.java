@@ -171,17 +171,26 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
         logger.info("Flow rule added to block traffic from MAC: {}", srcMac.toString());
     }
 
+
+
+
+
+
+
     protected void deleteBlockingFlowRule(MacAddress srcMac, MacAddress dstMac) {
         DatapathId dpid = DatapathId.of("00:00:f2:20:f9:45:4c:4e");
-
-        logger.info("from MAC: {} has been deleted", srcMac.toString());
-        logger.info("destino MAC: {} has been deleted", dstMac.toString());
         IOFSwitch sw = switchService.getSwitch(dpid);
+
         if (sw == null) {
             logger.error("Switch {} no encontrado", dpid.toString());
             return;
         }
 
+        deleteFlowRule(sw, srcMac, dstMac); // Elimina la regla de bloqueo de srcMac a dstMac
+        deleteFlowRule(sw, dstMac, srcMac); // Elimina la regla de bloqueo de dstMac a srcMac
+    }
+
+    protected void deleteFlowRule(IOFSwitch sw, MacAddress srcMac, MacAddress dstMac) {
         OFFactory factory = sw.getOFFactory();
         Match match = factory.buildMatch()
                 .setExact(MatchField.ETH_SRC, srcMac)
@@ -191,13 +200,23 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
         OFFlowDelete flowDelete = factory.buildFlowDelete()
                 .setMatch(match)
                 .setCookie(U64.of(30))
-                .setPriority(32768) // La misma prioridad que se usó para añadir la regla
+                .setPriority(32768)
                 .setOutPort(OFPort.ANY)
                 .build();
 
         sw.write(flowDelete);
-        logger.info("Flow rule to block traffic from MAC: {} has been deleted", srcMac.toString());
+        logger.info("Flow rule to block traffic from MAC: {} to MAC: {} has been deleted", srcMac, dstMac);
     }
+
+
+
+
+
+
+
+
+
+
 
 
     private void handleTCPOrUDPPacket(IPv4 ipv4, Ethernet eth) {
