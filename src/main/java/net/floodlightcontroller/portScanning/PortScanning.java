@@ -9,9 +9,7 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.mactracker.MACTracker;
-import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.packet.TCP;
-import net.floodlightcontroller.packet.UDP;
+import net.floodlightcontroller.packet.*;
 
 
 import org.projectfloodlight.openflow.protocol.*;
@@ -24,7 +22,6 @@ import net.floodlightcontroller.core.IFloodlightProviderService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import net.floodlightcontroller.packet.Ethernet;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
@@ -69,33 +66,43 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
     public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
         Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 
+//        if (eth.getEtherType() == EthType.IPv4) {
+//            IPv4 ipv4 = (IPv4) eth.getPayload();
+//            if (ipv4.getProtocol() == IpProtocol.TCP || ipv4.getProtocol() == IpProtocol.UDP) {
+//                IPv4Address srcIp = ipv4.getSourceAddress();
+//                MacAddress srcMac = eth.getSourceMACAddress();
+//                MacAddress dstMac = eth.getDestinationMACAddress();
+//                TransportPort dstPort = (ipv4.getPayload() instanceof TCP) ?
+//                        ((TCP) ipv4.getPayload()).getDestinationPort() :
+//                        ((UDP) ipv4.getPayload()).getDestinationPort();
+//
+//                Set<TransportPort> ports = portAccessMap.get(srcIp);
+//                if (ports == null) {
+//                    ports = new ConcurrentSkipListSet<>();
+//                    portAccessMap.put(srcIp, ports);
+//                }
+//                ports.add(dstPort);
+//
+//                lastAccessTimeMap.put(srcIp, System.currentTimeMillis());
+//
+//                if (isPortScan(srcIp)) {
+//                    blockSourceIp(srcMac, dstMac); // Utiliza las direcciones MAC detectadas
+//                    logger.info("Port scan detected from IP: {}, blocking source MAC: {}", srcIp.toString(), srcMac.toString());
+//                    return Command.STOP;
+//                }
+//
+//            }
+//        }
+
         if (eth.getEtherType() == EthType.IPv4) {
             IPv4 ipv4 = (IPv4) eth.getPayload();
-            if (ipv4.getProtocol() == IpProtocol.TCP || ipv4.getProtocol() == IpProtocol.UDP) {
-                IPv4Address srcIp = ipv4.getSourceAddress();
-                MacAddress srcMac = eth.getSourceMACAddress();
-                MacAddress dstMac = eth.getDestinationMACAddress();
-                TransportPort dstPort = (ipv4.getPayload() instanceof TCP) ?
-                        ((TCP) ipv4.getPayload()).getDestinationPort() :
-                        ((UDP) ipv4.getPayload()).getDestinationPort();
-
-                Set<TransportPort> ports = portAccessMap.get(srcIp);
-                if (ports == null) {
-                    ports = new ConcurrentSkipListSet<>();
-                    portAccessMap.put(srcIp, ports);
-                }
-                ports.add(dstPort);
-
-                lastAccessTimeMap.put(srcIp, System.currentTimeMillis());
-
-                if (isPortScan(srcIp)) {
-                    blockSourceIp(srcMac, dstMac); // Utiliza las direcciones MAC detectadas
-                    logger.info("Port scan detected from IP: {}, blocking source MAC: {}", srcIp.toString(), srcMac.toString());
-                    return Command.STOP;
-                }
-
+            if (ipv4.getProtocol() == IpProtocol.ICMP) {
+                handleICMPPacket(ipv4, eth);
+            } else if (ipv4.getProtocol() == IpProtocol.TCP || ipv4.getProtocol() == IpProtocol.UDP) {
+                handleTCPOrUDPPacket(ipv4, eth);
             }
         }
+
         return Command.CONTINUE;
     }
 
@@ -186,6 +193,184 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
         logger.info("Flow rule added to block traffic from MAC: {}", srcMac.toString());
     }
+
+    protected void deleteBlockingFlowRule(MacAddress srcMac, MacAddress dstMac) {
+        DatapathId dpid = DatapathId.of("00:00:f2:20:f9:45:4c:4e");
+        IOFSwitch sw = switchService.getSwitch(dpid);
+        if (sw == null) {
+            logger.error("Switch {} no encontrado", dpid.toString());
+            return;
+        }
+
+        OFFactory factory = sw.getOFFactory();
+        Match match = factory.buildMatch()
+                .setExact(MatchField.ETH_SRC, srcMac)
+                .setExact(MatchField.ETH_DST, dstMac)
+                .build();
+
+        OFFlowDelete flowDelete = factory.buildFlowDelete()
+                .setMatch(match)
+                .setCookie(U64.of(30)) // Si se utilizó un valor de cookie específico al crear el flujo
+                .setOutPort(OFPort.ANY)
+                .build();
+
+        sw.write(flowDelete);
+        logger.info("Flow rule to block traffic from MAC: {} has been deleted", srcMac.toString());
+    }
+
+
+
+//    @Override
+//    public Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
+//        Ethernet eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+//
+//        if (eth.getEtherType() == EthType.IPv4) {
+//            IPv4 ipv4 = (IPv4) eth.getPayload();
+//            if (ipv4.getProtocol() == IpProtocol.ICMP) {
+//                handleICMPPacket(ipv4, eth, sw);
+//            } else if (ipv4.getProtocol() == IpProtocol.TCP || ipv4.getProtocol() == IpProtocol.UDP) {
+//                handleTCPOrUDPPacket(ipv4, eth);
+//            }
+//        }
+//        return Command.CONTINUE;
+//    }
+//
+    private void handleTCPOrUDPPacket(IPv4 ipv4, Ethernet eth) {
+        IPv4Address srcIp = ipv4.getSourceAddress();
+        MacAddress srcMac = eth.getSourceMACAddress();
+        MacAddress dstMac = eth.getDestinationMACAddress();
+        TransportPort dstPort = ipv4.getPayload() instanceof TCP ?
+                ((TCP) ipv4.getPayload()).getDestinationPort() :
+                ((UDP) ipv4.getPayload()).getDestinationPort();
+
+        Set<TransportPort> ports = portAccessMap.get(srcIp);
+        if (ports == null) {
+            ports = new ConcurrentSkipListSet<>();
+            portAccessMap.put(srcIp, ports);
+        }
+        ports.add(dstPort);
+        lastAccessTimeMap.put(srcIp, System.currentTimeMillis());
+
+        if (isPortScan(srcIp)) {
+            blockSourceIp(srcMac, dstMac);
+            logger.info("Port scan detected from IP: {}, blocking source MAC: {}", srcIp.toString(), srcMac.toString());
+        }
+    }
+
+    private void handleICMPPacket(IPv4 ipv4, Ethernet eth) {
+        ICMP icmp = (ICMP) ipv4.getPayload();
+        if (icmp.getIcmpType() == ICMP.ECHO_REQUEST && ipv4.getSourceAddress().equals(IPv4Address.of("10.0.0.22"))) {
+            MacAddress srcMac = eth.getSourceMACAddress();
+            MacAddress dstMac = eth.getDestinationMACAddress();
+            deleteBlockingFlowRule(srcMac, dstMac);
+            logger.info("ICMP echo request from 10.0.0.22 detected, deleting block rule");
+        }
+    }
+//
+//    protected boolean isPortScan(IPv4Address srcIp) {
+//        Set<TransportPort> accessedPorts = portAccessMap.get(srcIp);
+//        Long lastAccessTime = lastAccessTimeMap.get(srcIp);
+//        if (lastAccessTime == null) {
+//            lastAccessTime = System.currentTimeMillis();
+//        }
+//
+//        long currentTime = System.currentTimeMillis();
+//        return accessedPorts != null && (currentTime - lastAccessTime <= TIME_WINDOW) && accessedPorts.size() > PORT_SCAN_THRESHOLD;
+//    }
+//
+//    protected void blockSourceIp(MacAddress srcMac, MacAddress dstMac) {
+//        DatapathId dpid = DatapathId.of("00:00:f2:20:f9:45:4c:4e");
+//        IOFSwitch sw = switchService.getSwitch(dpid);
+//        if (sw == null) {
+//            logger.error("Switch {} no encontrado", dpid.toString());
+//            return;
+//        }
+//
+//        OFFactory factory = sw.getOFFactory();
+//        Match match = factory.buildMatch()
+//                .setExact(MatchField.ETH_SRC, srcMac)
+//                .setExact(MatchField.ETH_DST, dstMac)
+//                .build();
+//
+//        OFFlowAdd flowAdd = factory.buildFlowAdd()
+//                .setCookie(U64.of(30))
+//                .setMatch(match)
+//                .setPriority(32768)
+//                .setIdleTimeout(0)
+//                .setHardTimeout(3600)
+//                .setBufferId(OFBufferId.NO_BUFFER)
+//                .setOutPort(OFPort.ANY)
+//                .build();
+//
+//        sw.write(flowAdd);
+//        logger.info("Flow rule added to block traffic from MAC: {}", srcMac.toString());
+//    }
+//
+//    protected void deleteBlockingFlowRule(MacAddress srcMac, MacAddress dstMac, IOFSwitch sw) {
+//        OFFactory factory = sw.getOFFactory();
+//        Match match = factory.buildMatch()
+//                .setExact(MatchField.ETH_SRC, srcMac)
+//                .setExact(MatchField.ETH_DST, dstMac)
+//                .build();
+//
+//        OFFlowDelete flowDelete = factory.buildFlowDelete()
+//                .setMatch(match)
+//                .setCookie(U64.of(30))
+//                .setOutPort(OFPort.ANY)
+//                .build();
+//
+//        sw.write(flowDelete);
+//        logger.info("Flow rule to block traffic from MAC: {} has been deleted", srcMac.toString());
+//    }
+//
+//    @Override
+//    public Collection<Class<? extends IFloodlightService>> getModuleServices() {
+//        return null;
+//    }
+//
+//    @Override
+//    public Map<Class<? extends IFloodlightService>, IFloodlightService> getServiceImpls() {
+//        return null;
+//    }
+//
+//    @Override
+//    public Collection<Class<? extends IFloodlightService>> getModuleDependencies() {
+//        ArrayList<Class<? extends IFloodlightService>> l = new ArrayList<>();
+//        l.add(IFloodlightProviderService.class);
+//        return l;
+//    }
+//
+//    @Override
+//    public void init(FloodlightModuleContext context) throws FloodlightModuleException {
+//        floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
+//        switchService = context.getServiceImpl(IOFSwitchService.class);
+//        portAccessMap = new ConcurrentHashMap<>();
+//        lastAccessTimeMap = new ConcurrentHashMap<>();
+//        logger = LoggerFactory.getLogger(PortScanning.class);
+//    }
+//
+//    @Override
+//    public void startUp(FloodlightModuleContext context) {
+//        floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
+//    }
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }
