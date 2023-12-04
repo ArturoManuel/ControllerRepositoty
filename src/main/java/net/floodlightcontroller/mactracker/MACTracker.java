@@ -75,19 +75,17 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
             IPv4 ipv4 = (IPv4) eth.getPayload();
             srcIp = ipv4.getSourceAddress();
 
+
             // Registra todos los paquetes IPv4
             logger.info("Paquete IPv4 recibido: IP Origen: {}, MAC Origen: {}", srcIp.toString(), sourceMac.toString());
 
-            // Procesa solo paquetes ICMP
+            // Procesa paquetes TCP y UDP
             if (ipv4.getProtocol() == IpProtocol.TCP || ipv4.getProtocol() == IpProtocol.UDP) {
-                // Revisa si la dirección IP de origen está en la lista de pares permitidos
-                if (allowedIPMacPairs.containsKey(srcIp)) {
-                    if (!allowedIPMacPairs.get(srcIp).equals(sourceMac)) {
-                        logger.info("Bloqueo de paquete ICMP desde IP: {}, con MAC: {}. La dirección MAC no coincide con la permitida.", srcIp.toString(), sourceMac.toString());
-                        return Command.STOP;
-                    }
+                // Revisa si la dirección MAC de origen está en la lista de MACs permitidas
+                if (allowedIPMacPairs.containsKey(srcIp) && allowedIPMacPairs.get(srcIp).equals(sourceMac)) {
+                    logger.info("Paquete permitido desde IP: {}, con MAC: {}.", srcIp.toString(), sourceMac.toString());
                 } else {
-                    logger.info("Bloqueo de paquete ICMP desde IP no permitida: {}, con MAC: {}.", srcIp.toString(), sourceMac.toString());
+                    logger.info("Bloqueo de paquete desde IP: {}, con MAC: {}. No autorizado o dirección MAC no coincide.", srcIp.toString(), sourceMac.toString());
                     return Command.STOP;
                 }
             }
@@ -98,6 +96,7 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
 
         return Command.CONTINUE;
     }
+
     @Override
     public Collection<Class<? extends IFloodlightService>> getModuleServices() {
         return null;
