@@ -40,7 +40,7 @@ public class PortScanning implements IOFMessageListener, IFloodlightModule {
 
     protected Map<IPv4Address, Set<TransportPort>> portAccessMap;
     protected Map<IPv4Address, Long> lastAccessTimeMap;
-    protected final int PORT_SCAN_THRESHOLD = 100; // Ejemplo: umbral de puertos
+    protected final int PORT_SCAN_THRESHOLD = 50; // Ejemplo: umbral de puertos
     protected final long TIME_WINDOW = 10 * 1000;
     protected Map<DatapathId, Pair<MacAddress, MacAddress>> blockedFlows;
 
