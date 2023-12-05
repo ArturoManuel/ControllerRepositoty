@@ -129,7 +129,8 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
         allowedIPMacPairs.put(IPv4Address.of("10.0.0.2"), MacAddress.of("fa:16:3e:03:d1:8b"));
         allowedIPMacPairs.put(IPv4Address.of("10.0.0.21"), MacAddress.of("fa:16:3e:01:a4:c0"));
         allowedIPMacPairs.put(IPv4Address.of("10.0.0.22"), MacAddress.of("fa:16:3e:5a:0b:57"));
-        // ... Agrega tantas combinaciones como necesites
+        allowedIPMacPairs.put(IPv4Address.of("10.0.0.3"), MacAddress.of("fa:16:3e;19;74:79"));
+
 
 
     }
